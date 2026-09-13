@@ -1,6 +1,7 @@
 package com.ignite.habitflow
 
 import android.content.Context
+import android.content.Intent
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -31,6 +32,12 @@ private fun SettingsScreen() {
     MaterialTheme(colorScheme = lightColorScheme(primary = Color(0xFF171717))) {
         Scaffold(topBar = { TopAppBar(title = { Text("Settings") }) }, containerColor = Color(0xFFF7F7F5)) { padding ->
             Column(Modifier.fillMaxSize().padding(padding).padding(24.dp), verticalArrangement = Arrangement.spacedBy(18.dp)) {
+                Card(shape = RoundedCornerShape(18.dp), colors = CardDefaults.cardColors(Color.White), elevation = CardDefaults.cardElevation(0.dp)) {
+                    TextButton(
+                        onClick = { context.startActivity(Intent(context, PremiumActivity::class.java)) },
+                        modifier = Modifier.fillMaxWidth().padding(8.dp)
+                    ) { Text("Ignite Premium  →", fontSize = 16.sp) }
+                }
                 Text("Appearance", fontSize = 20.sp)
                 SettingChoice("Theme", listOf("System", "Light", "Dark"), theme) { theme = it; prefs.edit().putString("theme", it).apply() }
                 SettingChoice("Accent", listOf("Ink", "Blue", "Green"), accent) { accent = it; prefs.edit().putString("accent", it).apply() }
