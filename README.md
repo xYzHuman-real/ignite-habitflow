@@ -1,24 +1,43 @@
 # Ignite HabitFlow
 
-A minimal, premium habit tracker + todo list + productivity timer for Android.
+A minimal Android productivity app combining tasks, daily habits, and focused work sessions.
+
+## MVP
+
+- **Home** — today overview for tasks, habits, and focus minutes
+- **Tasks** — create, edit, complete, and delete tasks
+- **Habits** — daily completion history, streaks, monthly calendar, and completion percentage
+- **Focus** — 15/25/50 minute focus sessions with pause/reset and persisted focus minutes
+- **Local-first storage** — data is stored on-device with SharedPreferences
+- **V1 migration** — legacy habit completion state is migrated to date-based history
+
+## Design
+
+Ignite HabitFlow uses a restrained, premium productivity aesthetic: generous whitespace, rounded cards, subtle surfaces, and a glass-style bottom navigation bar.
+
+## Tech
+
+- Kotlin
+- Jetpack Compose + Material 3
+- Android Gradle Plugin 8.7.3
+- Kotlin 2.0.21
+- compileSdk / targetSdk 35
+- minSdk 26
+
+## Open in Android Studio
+
+1. Clone the repository.
+2. Open the project in Android Studio.
+3. Allow Gradle sync to finish.
+4. Select the `app` configuration.
+5. Run on an Android 8.0+ device or emulator.
+
+The repository includes a GitHub Actions workflow that builds the debug APK on pushes and pull requests to `main`.
 
 ## Product direction
 
-- Minimal Apple-inspired aesthetic
-- Glass-style bottom navigation
-- Restrained palette and generous whitespace
-- Tasks, habits, and focus timer first
-- Premium features after the MVP is stable
+Premium features planned after the MVP include recurring tasks, subtasks, advanced statistics, custom timer presets, focus history, themes, and home customization.
 
-## Current milestone — 0.1.0
+## License
 
-The Android Compose shell is in place with Home, Tasks, Habits, and Focus sections. The Focus timer has a working 25-minute start/pause/reset prototype.
-
-## Planned MVP
-
-1. Persistent tasks with due dates and completion
-2. Daily habits with streaks and calendar history
-3. Configurable focus/break sessions
-4. Local persistence
-5. Clean empty/loading/error states
-6. Release build and Play Store preparation
+No open-source license has been selected yet.
