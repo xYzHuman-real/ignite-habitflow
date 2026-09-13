@@ -20,6 +20,7 @@ class PremiumActivity : ComponentActivity() {
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun PremiumScreen() {
     val ink = Color(0xFF171717)
