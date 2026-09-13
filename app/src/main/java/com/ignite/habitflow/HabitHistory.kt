@@ -26,7 +26,12 @@ object HabitHistory {
     fun completionPercent(completedDates: Set<String>, start: LocalDate, end: LocalDate): Int {
         if (end.isBefore(start)) return 0
         val total = java.time.temporal.ChronoUnit.DAYS.between(start, end).toInt() + 1
-        val completed = (start..end).count { isCompleted(completedDates, it) }
+        var completed = 0
+        var cursor = start
+        while (!cursor.isAfter(end)) {
+            if (isCompleted(completedDates, cursor)) completed++
+            cursor = cursor.plusDays(1)
+        }
         return (completed * 100 / total).coerceIn(0, 100)
     }
 }
