@@ -15,6 +15,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 
@@ -47,7 +48,7 @@ private fun PremiumScreen(activity: PremiumActivity) {
                         Column(Modifier.padding(22.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
                             Text("More room to build your system", fontSize = 23.sp, fontWeight = FontWeight.SemiBold)
                             Text(if (active) "Premium is active on this Google Play account." else "Unlock the deeper parts of your productivity system.", color = Color.Gray, fontSize = 14.sp)
-                            Surface(shape = RoundedCornerShape(12.dp), color = Color(0xFFEDEDEB)) { Text(if (active) "PREMIUM ACTIVE" else "PREMIUM NOT ACTIVE", Modifier.padding(horizontal = 12.dp, vertical = 7.dp), fontSize = 11.sp, fontWeight = FontWeight.Bold) }
+                            Surface(shape = RoundedCornerShape(12.dp), color = Color(0xFFEDEDEB)) { Text(if (active) "PREMIUM ACTIVE" else "LIMITED-TIME LAUNCH OFFER", Modifier.padding(horizontal = 12.dp, vertical = 7.dp), fontSize = 11.sp, fontWeight = FontWeight.Bold) }
                         }
                     }
                 }
@@ -61,13 +62,13 @@ private fun PremiumScreen(activity: PremiumActivity) {
                     }
                 }
                 item {
-                    Text("Choose a plan", fontSize = 18.sp, fontWeight = FontWeight.SemiBold, modifier = Modifier.padding(top = 4.dp))
-                    Spacer(Modifier.height(8.dp))
-                    PremiumPlan("Monthly", "₹50 / month", BillingManager.MONTHLY) { billing.buy(activity, it) }
-                    PremiumPlan("Yearly", "₹200 / year", BillingManager.YEARLY) { billing.buy(activity, it) }
-                    PremiumPlan("Lifetime", "₹350 once", BillingManager.LIFETIME) { billing.buy(activity, it) }
+                    Text("Limited-time launch pricing", fontSize = 18.sp, fontWeight = FontWeight.SemiBold, modifier = Modifier.padding(top = 4.dp))
+                    Text("Get the launch price while the offer is available.", color = Color.Gray, fontSize = 13.sp, modifier = Modifier.padding(top = 3.dp, bottom = 8.dp))
+                    PremiumPlan("Monthly", "₹199 / month", "₹49 / month", BillingManager.MONTHLY) { billing.buy(activity, it) }
+                    PremiumPlan("Yearly", "₹399 / year", "₹199 / year", BillingManager.YEARLY) { billing.buy(activity, it) }
+                    PremiumPlan("Lifetime", "₹849 once", "₹349 lifetime", BillingManager.LIFETIME) { billing.buy(activity, it) }
                 }
-                item { Text("Purchases are processed by Google Play. Products must be configured in Play Console before they become purchasable.", color = Color.Gray, fontSize = 12.sp) }
+                item { Text("Prices shown are the planned regular and launch prices. The final amount and offer availability are controlled by the products configured in Google Play Console. Purchases are processed by Google Play.", color = Color.Gray, fontSize = 12.sp) }
             }
         }
     }
@@ -75,10 +76,15 @@ private fun PremiumScreen(activity: PremiumActivity) {
 }
 
 @Composable
-private fun PremiumPlan(title: String, price: String, productId: String, onBuy: (String) -> Unit) {
+private fun PremiumPlan(title: String, regularPrice: String, launchPrice: String, productId: String, onBuy: (String) -> Unit) {
     Card(shape = RoundedCornerShape(18.dp), colors = CardDefaults.cardColors(Color.White), elevation = CardDefaults.cardElevation(0.dp), modifier = Modifier.padding(bottom = 8.dp)) {
         Row(Modifier.fillMaxWidth().padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
-            Column(Modifier.weight(1f)) { Text(title, fontWeight = FontWeight.SemiBold); Text(price, color = Color.Gray, fontSize = 13.sp) }
+            Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(3.dp)) {
+                Text(title, fontWeight = FontWeight.SemiBold)
+                Text(regularPrice, color = Color.Gray, fontSize = 12.sp, textDecoration = TextDecoration.LineThrough)
+                Text(launchPrice, fontSize = 15.sp, fontWeight = FontWeight.Bold)
+                Text("LIMITED-TIME OFFER", color = Color.Gray, fontSize = 10.sp, fontWeight = FontWeight.Bold)
+            }
             Button(onClick = { onBuy(productId) }, shape = RoundedCornerShape(14.dp)) { Text("Choose") }
         }
     }
