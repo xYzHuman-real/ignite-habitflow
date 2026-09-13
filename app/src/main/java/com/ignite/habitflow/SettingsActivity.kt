@@ -21,6 +21,7 @@ class SettingsActivity : ComponentActivity() {
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun SettingsScreen() {
     val context = androidx.compose.ui.platform.LocalContext.current
