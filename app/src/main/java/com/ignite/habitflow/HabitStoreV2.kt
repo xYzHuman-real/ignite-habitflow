@@ -7,7 +7,8 @@ import java.time.LocalDate
 
 /** SharedPreferences persistence for date-aware habits, with V1 migration support. */
 class HabitStoreV2(context: Context) {
-    private val prefs = context.getSharedPreferences("ignite_habitflow", Context.MODE_PRIVATE)
+    // Keep the original preference file so existing V1 habits can be migrated in place.
+    private val prefs = context.getSharedPreferences("habitflow", Context.MODE_PRIVATE)
     private val key = "habits"
 
     fun load(): List<HabitRecord> {
@@ -33,9 +34,7 @@ class HabitStoreV2(context: Context) {
     fun save(habits: List<HabitRecord>) {
         val array = JSONArray()
         habits.forEach { habit ->
-            val item = JSONObject()
-                .put("id", habit.id)
-                .put("title", habit.title)
+            val item = JSONObject().put("id", habit.id).put("title", habit.title)
             val dates = JSONArray()
             habit.completedDates.sorted().forEach(dates::put)
             item.put("completedDates", dates)
@@ -45,6 +44,5 @@ class HabitStoreV2(context: Context) {
     }
 
     fun toggle(habit: HabitRecord, date: LocalDate): List<HabitRecord> =
-        load().map { if (it.id == habit.id) it.toggle(date) else it }
-            .also(::save)
+        load().map { if (it.id == habit.id) it.toggle(date) else it }.also(::save)
 }
