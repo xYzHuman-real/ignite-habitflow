@@ -33,39 +33,64 @@ class BillingManager(
         if (result.responseCode == BillingClient.BillingResponseCode.OK && purchases != null) {
             purchases.filter { it.purchaseState == Purchase.PurchaseState.PURCHASED }.forEach(::acknowledgeIfNeeded)
             if (purchases.any { it.purchaseState == Purchase.PurchaseState.PURCHASED }) onPremiumChanged(true)
-        } else if (result.responseCode != BillingClient.BillingResponseCode.USER_CANCELED) onMessage("Purchase unavailable: ${result.debugMessage}")
+        } else if (result.responseCode != BillingClient.BillingResponseCode.USER_CANCELED) {
+            onMessage("Purchase unavailable: ${result.debugMessage}")
+        }
     }
 
     fun connect() {
         if (client.isReady) { queryProducts(); queryExistingPurchases(); return }
         client.startConnection(object : BillingClientStateListener {
             override fun onBillingSetupFinished(result: BillingResult) {
-                if (result.responseCode == BillingClient.BillingResponseCode.OK) { queryProducts(); queryExistingPurchases() }
-                else onMessage("Google Play Billing is unavailable")
+                if (result.responseCode == BillingClient.BillingResponseCode.OK) {
+                    queryProducts()
+                    queryExistingPurchases()
+                } else onMessage("Google Play Billing is unavailable")
             }
             override fun onBillingServiceDisconnected() { }
         })
     }
 
     fun buy(activity: Activity, productId: String): Boolean {
-        if (!client.isReady) { onMessage("Connecting to Google Play…"); connect(); return false }
+        if (!client.isReady) {
+            onMessage("Connecting to Google Play…")
+            connect()
+            return false
+        }
         val product = if (productId == LIFETIME) lifetime else subscriptions.firstOrNull { it.productId == productId }
-        if (product == null) { onMessage("Premium product is not available yet"); return false }
+        if (product == null) {
+            onMessage("Premium product is not available yet")
+            return false
+        }
         val paramsBuilder = BillingFlowParams.ProductDetailsParams.newBuilder().setProductDetails(product)
         product.subscriptionOfferDetails?.firstOrNull()?.let { paramsBuilder.setOfferToken(it.offerToken) }
-        val result = client.launchBillingFlow(activity, BillingFlowParams.newBuilder().setProductDetailsParamsList(listOf(paramsBuilder.build())).build())
+        val result = client.launchBillingFlow(
+            activity,
+            BillingFlowParams.newBuilder()
+                .setProductDetailsParamsList(listOf(paramsBuilder.build()))
+                .build()
+        )
         if (result.responseCode != BillingClient.BillingResponseCode.OK) onMessage(result.debugMessage)
         return result.responseCode == BillingClient.BillingResponseCode.OK
     }
 
     private fun queryProducts() {
-        val subs = listOf(MONTHLY, YEARLY).map { QueryProductDetailsParams.Product.newBuilder().setProductId(it).setProductType(BillingClient.ProductType.SUBS).build() }
-        client.queryProductDetailsAsync(QueryProductDetailsParams.newBuilder().setProductList(subs).build()) { result, details ->
-            if (result.responseCode == BillingClient.BillingResponseCode.OK) subscriptions = details.productDetailsList
+        val subs = listOf(MONTHLY, YEARLY).map {
+            QueryProductDetailsParams.Product.newBuilder()
+                .setProductId(it)
+                .setProductType(BillingClient.ProductType.SUBS)
+                .build()
         }
-        val oneTime = QueryProductDetailsParams.Product.newBuilder().setProductId(LIFETIME).setProductType(BillingClient.ProductType.INAPP).build()
+        client.queryProductDetailsAsync(QueryProductDetailsParams.newBuilder().setProductList(subs).build()) { result, details ->
+            if (result.responseCode == BillingClient.BillingResponseCode.OK) subscriptions = details
+        }
+
+        val oneTime = QueryProductDetailsParams.Product.newBuilder()
+            .setProductId(LIFETIME)
+            .setProductType(BillingClient.ProductType.INAPP)
+            .build()
         client.queryProductDetailsAsync(QueryProductDetailsParams.newBuilder().setProductList(listOf(oneTime)).build()) { result, details ->
-            if (result.responseCode == BillingClient.BillingResponseCode.OK) lifetime = details.productDetailsList.firstOrNull()
+            if (result.responseCode == BillingClient.BillingResponseCode.OK) lifetime = details.firstOrNull()
         }
     }
 
@@ -81,6 +106,10 @@ class BillingManager(
     }
 
     private fun acknowledgeIfNeeded(purchase: Purchase) {
-        if (!purchase.isAcknowledged) client.acknowledgePurchase(AcknowledgePurchaseParams.newBuilder().setPurchaseToken(purchase.purchaseToken).build()) { }
+        if (!purchase.isAcknowledged) {
+            client.acknowledgePurchase(
+                AcknowledgePurchaseParams.newBuilder().setPurchaseToken(purchase.purchaseToken).build()
+            ) { }
+        }
     }
 }
