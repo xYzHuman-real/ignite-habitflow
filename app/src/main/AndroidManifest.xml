@@ -5,6 +5,7 @@
         android:label="Ignite HabitFlow"
         android:supportsRtl="true"
         android:theme="@style/Theme.IgniteHabitFlow">
+        <activity android:name=".PremiumActivity" android:exported="false" />
         <activity android:name=".SettingsActivity" android:exported="false" />
         <activity android:name=".InsightsActivity" android:exported="false" />
         <activity android:name=".MainActivity" android:exported="true">
