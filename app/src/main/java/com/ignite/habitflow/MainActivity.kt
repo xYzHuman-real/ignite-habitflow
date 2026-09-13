@@ -139,9 +139,59 @@ private fun nextDue(date: LocalDate, recurrence: Recurrence): LocalDate = when (
 }
 
 @Composable private fun FocusScreen(history: List<Int>, onComplete: (Int) -> Unit) {
-    val context = androidx.compose.ui.platform.LocalContext.current; val prefs = remember { context.getSharedPreferences("habitflow", Context.MODE_PRIVATE) }; var selected by remember { mutableIntStateOf(prefs.getInt("default_focus", 25)) }; var seconds by remember(selected) { mutableIntStateOf(selected * 60) }; var running by remember { mutableStateOf(false) }
-    LaunchedEffect(running) { while (running && seconds > 0) { delay(1000); seconds-- }; if (running && seconds == 0) { onComplete(selected); running = false } }
-    Column(Modifier.fillMaxSize().padding(24.dp), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(20.dp)) { Spacer(Modifier.height(28.dp)); Text("Focus", fontSize = 30.sp, fontWeight = FontWeight.SemiBold); Text("One session at a time", color = Muted); Text(String.format(Locale.getDefault(), "%02d:%02d", seconds / 60, seconds % 60), fontSize = 58.sp, fontWeight = FontWeight.SemiBold); Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) { listOf(15,25,50).forEach { m -> FilterChip(selected = selected == m, onClick = { if (!running) { selected = m; seconds = m * 60 } }, label = { Text("${m}m") }) } }; Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) { Button(onClick = { running = !running }, shape = RoundedCornerShape(16.dp)) { Text(if (running) "Pause" else "Start") }; OutlinedButton(onClick = { running = false; seconds = selected * 60 }, shape = RoundedCornerShape(16.dp)) { Text("Reset") } }; Text("Completed focus: ${history.sum()} minutes", color = Muted); Text("Sessions saved: ${history.size}", color = Muted, fontSize = 12.sp) }
+    val context = androidx.compose.ui.platform.LocalContext.current
+    val prefs = remember { context.getSharedPreferences("habitflow", Context.MODE_PRIVATE) }
+    var selected by remember { mutableIntStateOf(prefs.getInt("default_focus", 25)) }
+    var shortBreak by remember { mutableIntStateOf(prefs.getInt("short_break", 5)) }
+    var longBreak by remember { mutableIntStateOf(prefs.getInt("long_break", 15)) }
+    var targetSessions by remember { mutableIntStateOf(prefs.getInt("session_count", 4)) }
+    var phase by remember { mutableStateOf("Focus") }
+    var completedSessions by remember { mutableIntStateOf(0) }
+    var seconds by remember { mutableIntStateOf(selected * 60) }
+    var running by remember { mutableStateOf(false) }
+
+    fun resetPhase(nextPhase: String, minutes: Int) {
+        phase = nextPhase
+        seconds = minutes * 60
+        running = false
+    }
+
+    LaunchedEffect(running, phase, selected, shortBreak, longBreak, targetSessions) {
+        while (running && seconds > 0) { delay(1000); seconds-- }
+        if (running && seconds == 0) {
+            if (phase == "Focus") {
+                onComplete(selected)
+                completedSessions++
+                if (completedSessions >= targetSessions) {
+                    resetPhase("Long break", longBreak)
+                    completedSessions = 0
+                } else {
+                    resetPhase("Short break", shortBreak)
+                }
+            } else {
+                resetPhase("Focus", selected)
+                running = true
+            }
+        }
+    }
+
+    Column(Modifier.fillMaxSize().padding(24.dp), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(20.dp)) {
+        Spacer(Modifier.height(20.dp))
+        Text("Focus", fontSize = 30.sp, fontWeight = FontWeight.SemiBold)
+        Text(phase, color = Muted)
+        Text(String.format(Locale.getDefault(), "%02d:%02d", seconds / 60, seconds % 60), fontSize = 58.sp, fontWeight = FontWeight.SemiBold)
+        if (phase == "Focus") {
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) { listOf(15, 25, 50).forEach { m -> FilterChip(selected = selected == m, onClick = { if (!running) { selected = m; seconds = m * 60 } }, label = { Text("${m}m") }) } }
+        }
+        Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+            Button(onClick = { running = !running }, shape = RoundedCornerShape(16.dp)) { Text(if (running) "Pause" else "Start") }
+            OutlinedButton(onClick = { running = false; phase = "Focus"; completedSessions = 0; seconds = selected * 60 }, shape = RoundedCornerShape(16.dp)) { Text("Reset") }
+        }
+        Text("Session ${completedSessions + 1} of $targetSessions", color = Muted, fontSize = 13.sp)
+        Text("Completed focus: ${history.sum()} minutes", color = Muted)
+        Text("Sessions saved: ${history.size}", color = Muted, fontSize = 12.sp)
+        Text("Breaks: ${shortBreak}m / ${longBreak}m", color = Muted, fontSize = 12.sp)
+    }
 }
 
 @Composable private fun EmptyState(title: String, subtitle: String, action: () -> Unit) { Column(Modifier.fillMaxSize(), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.Center) { Text(title, fontSize = 20.sp, fontWeight = FontWeight.SemiBold); Text(subtitle, color = Muted, fontSize = 14.sp, modifier = Modifier.padding(top = 6.dp)); TextButton(onClick = action, modifier = Modifier.padding(top = 8.dp)) { Text("Get started") } } }
