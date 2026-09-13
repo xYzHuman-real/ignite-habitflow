@@ -1,6 +1,5 @@
 package com.ignite.habitflow
 
-import android.content.Context
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -14,7 +13,6 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import org.json.JSONArray
 import java.time.LocalDate
 import java.time.YearMonth
 import java.time.temporal.ChronoUnit
@@ -35,10 +33,10 @@ class InsightsActivity : ComponentActivity() {
 @Composable
 private fun InsightsScreen() {
     val context = androidx.compose.ui.platform.LocalContext.current
-    val prefs = remember { context.getSharedPreferences("habitflow", Context.MODE_PRIVATE) }
+    val prefs = remember { context.getSharedPreferences("habitflow", android.content.Context.MODE_PRIVATE) }
     val tasks = remember { loadTaskStats(prefs.getString("tasks", "[]") ?: "[]") }
     val habits = remember { HabitStoreV2(context).load() }
-    val focusHistory = remember { loadFocus(prefs.getString("focus_history", "[]") ?: "[]") }
+    val focusRecords = remember { FocusHistory.load(context) }
     var period by remember { mutableStateOf(InsightPeriod.WEEK) }
     val today = LocalDate.now()
     val start = when (period) {
@@ -48,11 +46,8 @@ private fun InsightsScreen() {
     }
     val end = today
     val habitRate = rangeHabitPercent(habits, start, end)
-    val focusMinutes = when (period) {
-        InsightPeriod.WEEK -> focusHistory.sum()
-        InsightPeriod.MONTH -> focusHistory.sum()
-        InsightPeriod.YEAR -> focusHistory.sum()
-    }
+    val focusMinutes = FocusHistory.total(focusRecords, start, end)
+    val focusSessions = FocusHistory.sessions(focusRecords, start, end)
     val completedTasks = tasks.count { it.done }
     val taskRate = ProductivityStats.taskCompletionPercent(completedTasks, tasks.size)
     val bestStreak = habits.maxOfOrNull { it.streak(today) } ?: 0
@@ -62,8 +57,9 @@ private fun InsightsScreen() {
         InsightPeriod.MONTH -> YearMonth.from(today).month.name.lowercase().replaceFirstChar { it.uppercase() }
         InsightPeriod.YEAR -> today.year.toString()
     }
+    val averageFocus = if (focusSessions == 0) 0 else focusMinutes / focusSessions
 
-    MaterialTheme(colorScheme = lightColorScheme(background = InsightsBg, surface = Color.White, primary = InsightsInk, onBackground = InsightsInk, onSurface = InsightsInk)) {
+    IgniteInsightsTheme {
         LazyColumn(
             Modifier.fillMaxSize().padding(horizontal = 24.dp, vertical = 28.dp),
             verticalArrangement = Arrangement.spacedBy(14.dp),
@@ -76,29 +72,48 @@ private fun InsightsScreen() {
             item {
                 SingleChoiceSegmentedButtonRow(Modifier.fillMaxWidth()) {
                     InsightPeriod.values().forEachIndexed { index, value ->
-                        SegmentedButton(
-                            selected = period == value,
-                            onClick = { period = value },
-                            shape = SegmentedButtonDefaults.itemShape(index, InsightPeriod.values().size)
-                        ) { Text(value.label, fontSize = 12.sp) }
+                        SegmentedButton(selected = period == value, onClick = { period = value }, shape = SegmentedButtonDefaults.itemShape(index, InsightPeriod.values().size)) {
+                            Text(value.label, fontSize = 12.sp)
+                        }
                     }
                 }
             }
             item { InsightCard(periodLabel, "$habitRate%", "Habit consistency in this period") }
             item { InsightCard("Today’s habits", "$completedHabitsToday/${habits.size}", "Completed today") }
             item { InsightCard("Tasks", "$taskRate%", "$completedTasks of ${tasks.size} completed overall") }
-            item { InsightCard("Focus", "$focusMinutes min", "${focusHistory.size} completed sessions stored") }
+            item { InsightCard("Focus", "$focusMinutes min", "$focusSessions sessions • $averageFocus min average") }
             item { InsightCard("Best current streak", "$bestStreak days", "Longest active habit streak") }
+            if (period == InsightPeriod.YEAR) {
+                item {
+                    val monthly = FocusHistory.monthTotals(focusRecords, today.year)
+                    InsightCard("Year focus", "${monthly.sum()} min", "${monthly.count { it > 0 }} active months")
+                }
+            }
             item {
                 Card(shape = RoundedCornerShape(20.dp), colors = CardDefaults.cardColors(Color.White), elevation = CardDefaults.cardElevation(0.dp)) {
                     Column(Modifier.padding(18.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                        Text("How to read this", fontWeight = FontWeight.SemiBold)
-                        Text("Use the week view for momentum, the month view for consistency, and the year view for the bigger picture.", color = InsightsMuted, fontSize = 13.sp)
+                        Text("Your rhythm", fontWeight = FontWeight.SemiBold)
+                        val message = when {
+                            habits.isEmpty() && tasks.isEmpty() -> "Add a habit or task to start building your baseline."
+                            habitRate >= 80 -> "Excellent consistency. Keep protecting the routine that is working."
+                            focusMinutes > 0 -> "You are building momentum. Use the next session to keep the streak alive."
+                            else -> "Small, repeatable actions are the goal. Focus on the next useful step."
+                        }
+                        Text(message, color = InsightsMuted, fontSize = 13.sp)
                     }
                 }
             }
+            item {
+                Text("Focus history", fontSize = 18.sp, fontWeight = FontWeight.SemiBold)
+                Text("Focus sessions are now stored with their completion date for accurate period totals. Older sessions without dates are migrated to the migration day rather than being given invented historical dates.", color = InsightsMuted, fontSize = 12.sp, modifier = Modifier.padding(top = 4.dp))
+            }
         }
     }
+}
+
+@Composable
+private fun IgniteInsightsTheme(content: @Composable () -> Unit) {
+    MaterialTheme(colorScheme = lightColorScheme(background = InsightsBg, surface = Color.White, primary = InsightsInk, onBackground = InsightsInk, onSurface = InsightsInk), content = content)
 }
 
 @Composable
@@ -132,11 +147,6 @@ private fun rangeHabitPercent(habits: List<HabitRecord>, start: LocalDate, end: 
 
 private data class TaskStat(val done: Boolean)
 private fun loadTaskStats(raw: String): List<TaskStat> = runCatching {
-    val a = JSONArray(raw)
+    val a = org.json.JSONArray(raw)
     List(a.length()) { i -> TaskStat(a.getJSONObject(i).optBoolean("done", false)) }
-}.getOrDefault(emptyList())
-
-private fun loadFocus(raw: String): List<Int> = runCatching {
-    val a = JSONArray(raw)
-    List(a.length()) { i -> a.optInt(i) }
 }.getOrDefault(emptyList())
