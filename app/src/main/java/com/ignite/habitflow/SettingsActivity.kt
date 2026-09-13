@@ -29,21 +29,28 @@ private fun SettingsScreen() {
     var theme by remember { mutableStateOf(prefs.getString("theme", "System") ?: "System") }
     var accent by remember { mutableStateOf(prefs.getString("accent", "Ink") ?: "Ink") }
     var defaultFocus by remember { mutableIntStateOf(prefs.getInt("default_focus", 25)) }
+    var shortBreak by remember { mutableIntStateOf(prefs.getInt("short_break", 5)) }
+    var longBreak by remember { mutableIntStateOf(prefs.getInt("long_break", 15)) }
+    var sessions by remember { mutableIntStateOf(prefs.getInt("session_count", 4)) }
+
+    fun saveInt(key: String, value: Int) = prefs.edit().putInt(key, value).apply()
 
     MaterialTheme(colorScheme = lightColorScheme(primary = Color(0xFF171717))) {
         Scaffold(topBar = { TopAppBar(title = { Text("Settings") }) }, containerColor = Color(0xFFF7F7F5)) { padding ->
             Column(Modifier.fillMaxSize().padding(padding).padding(24.dp), verticalArrangement = Arrangement.spacedBy(18.dp)) {
                 Card(shape = RoundedCornerShape(18.dp), colors = CardDefaults.cardColors(Color.White), elevation = CardDefaults.cardElevation(0.dp)) {
-                    TextButton(
-                        onClick = { context.startActivity(Intent(context, PremiumActivity::class.java)) },
-                        modifier = Modifier.fillMaxWidth().padding(8.dp)
-                    ) { Text("Ignite Premium  →", fontSize = 16.sp) }
+                    TextButton(onClick = { context.startActivity(Intent(context, PremiumActivity::class.java)) }, modifier = Modifier.fillMaxWidth().padding(8.dp)) {
+                        Text("Ignite Premium  →", fontSize = 16.sp)
+                    }
                 }
                 Text("Appearance", fontSize = 20.sp)
                 SettingChoice("Theme", listOf("System", "Light", "Dark"), theme) { theme = it; prefs.edit().putString("theme", it).apply() }
                 SettingChoice("Accent", listOf("Ink", "Blue", "Green"), accent) { accent = it; prefs.edit().putString("accent", it).apply() }
                 Text("Focus", fontSize = 20.sp)
-                SettingChoice("Default focus", listOf("15", "25", "50"), defaultFocus.toString()) { defaultFocus = it.toInt(); prefs.edit().putInt("default_focus", defaultFocus).apply() }
+                SettingChoice("Default focus", listOf("15", "25", "50"), defaultFocus.toString()) { defaultFocus = it.toInt(); saveInt("default_focus", defaultFocus) }
+                SettingChoice("Short break", listOf("3", "5", "10"), shortBreak.toString()) { shortBreak = it.toInt(); saveInt("short_break", shortBreak) }
+                SettingChoice("Long break", listOf("10", "15", "20"), longBreak.toString()) { longBreak = it.toInt(); saveInt("long_break", longBreak) }
+                SettingChoice("Sessions", listOf("2", "4", "6"), sessions.toString()) { sessions = it.toInt(); saveInt("session_count", sessions) }
                 Card(shape = RoundedCornerShape(18.dp), colors = CardDefaults.cardColors(Color.White), elevation = CardDefaults.cardElevation(0.dp)) {
                     Column(Modifier.padding(18.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                         Text("Ignite HabitFlow", fontSize = 16.sp)
