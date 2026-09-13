@@ -35,26 +35,36 @@ private fun SettingsScreen() {
 
     fun saveInt(key: String, value: Int) = prefs.edit().putInt(key, value).apply()
 
-    MaterialTheme(colorScheme = lightColorScheme(primary = Color(0xFF171717))) {
-        Scaffold(topBar = { TopAppBar(title = { Text("Settings") }) }, containerColor = Color(0xFFF7F7F5)) { padding ->
-            Column(Modifier.fillMaxSize().padding(padding).padding(24.dp), verticalArrangement = Arrangement.spacedBy(18.dp)) {
-                Card(shape = RoundedCornerShape(18.dp), colors = CardDefaults.cardColors(Color.White), elevation = CardDefaults.cardElevation(0.dp)) {
-                    TextButton(onClick = { context.startActivity(Intent(context, PremiumActivity::class.java)) }, modifier = Modifier.fillMaxWidth().padding(8.dp)) {
-                        Text("Ignite Premium  →", fontSize = 16.sp)
+    val dark = when (theme) {
+        "Dark" -> true
+        "Light" -> false
+        else -> (context.resources.configuration.uiMode and android.content.res.Configuration.UI_MODE_NIGHT_MASK) == android.content.res.Configuration.UI_MODE_NIGHT_YES
+    }
+    val accentColor = accentColor(accent)
+
+    IgniteTheme(context) {
+        val scheme = if (dark) darkColorScheme(primary = accentColor) else lightColorScheme(primary = accentColor)
+        MaterialTheme(colorScheme = scheme) {
+            Scaffold(topBar = { TopAppBar(title = { Text("Settings") }) }, containerColor = MaterialTheme.colorScheme.background) { padding ->
+                Column(Modifier.fillMaxSize().padding(padding).padding(24.dp), verticalArrangement = Arrangement.spacedBy(18.dp)) {
+                    Card(shape = RoundedCornerShape(18.dp), colors = CardDefaults.cardColors(MaterialTheme.colorScheme.surface), elevation = CardDefaults.cardElevation(0.dp)) {
+                        TextButton(onClick = { context.startActivity(Intent(context, PremiumActivity::class.java)) }, modifier = Modifier.fillMaxWidth().padding(8.dp)) {
+                            Text("Ignite Premium  →", fontSize = 16.sp, color = MaterialTheme.colorScheme.primary)
+                        }
                     }
-                }
-                Text("Appearance", fontSize = 20.sp)
-                SettingChoice("Theme", listOf("System", "Light", "Dark"), theme) { theme = it; prefs.edit().putString("theme", it).apply() }
-                SettingChoice("Accent", listOf("Ink", "Blue", "Green"), accent) { accent = it; prefs.edit().putString("accent", it).apply() }
-                Text("Focus", fontSize = 20.sp)
-                SettingChoice("Default focus", listOf("15", "25", "50"), defaultFocus.toString()) { defaultFocus = it.toInt(); saveInt("default_focus", defaultFocus) }
-                SettingChoice("Short break", listOf("3", "5", "10"), shortBreak.toString()) { shortBreak = it.toInt(); saveInt("short_break", shortBreak) }
-                SettingChoice("Long break", listOf("10", "15", "20"), longBreak.toString()) { longBreak = it.toInt(); saveInt("long_break", longBreak) }
-                SettingChoice("Sessions", listOf("2", "4", "6"), sessions.toString()) { sessions = it.toInt(); saveInt("session_count", sessions) }
-                Card(shape = RoundedCornerShape(18.dp), colors = CardDefaults.cardColors(Color.White), elevation = CardDefaults.cardElevation(0.dp)) {
-                    Column(Modifier.padding(18.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                        Text("Ignite HabitFlow", fontSize = 16.sp)
-                        Text("Your tasks, habits and focus data are stored locally on this device.", color = Color.Gray, fontSize = 13.sp)
+                    Text("Appearance", fontSize = 20.sp)
+                    SettingChoice("Theme", listOf("System", "Light", "Dark"), theme) { theme = it; prefs.edit().putString("theme", it).apply() }
+                    SettingChoice("Accent", listOf("Ink", "Blue", "Green"), accent) { accent = it; prefs.edit().putString("accent", it).apply() }
+                    Text("Focus", fontSize = 20.sp)
+                    SettingChoice("Default focus", listOf("15", "25", "50"), defaultFocus.toString()) { defaultFocus = it.toInt(); saveInt("default_focus", defaultFocus) }
+                    SettingChoice("Short break", listOf("3", "5", "10"), shortBreak.toString()) { shortBreak = it.toInt(); saveInt("short_break", shortBreak) }
+                    SettingChoice("Long break", listOf("10", "15", "20"), longBreak.toString()) { longBreak = it.toInt(); saveInt("long_break", longBreak) }
+                    SettingChoice("Sessions", listOf("2", "4", "6"), sessions.toString()) { sessions = it.toInt(); saveInt("session_count", sessions) }
+                    Card(shape = RoundedCornerShape(18.dp), colors = CardDefaults.cardColors(MaterialTheme.colorScheme.surface), elevation = CardDefaults.cardElevation(0.dp)) {
+                        Column(Modifier.padding(18.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                            Text("Ignite HabitFlow", fontSize = 16.sp)
+                            Text("Your tasks, habits and focus data are stored locally on this device.", color = MaterialTheme.colorScheme.onSurface.copy(alpha = .65f), fontSize = 13.sp)
+                        }
                     }
                 }
             }
@@ -65,7 +75,7 @@ private fun SettingsScreen() {
 @Composable
 private fun SettingChoice(title: String, options: List<String>, selected: String, onSelect: (String) -> Unit) {
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        Text(title, color = Color.Gray, fontSize = 13.sp)
+        Text(title, color = MaterialTheme.colorScheme.onSurface.copy(alpha = .65f), fontSize = 13.sp)
         Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) { options.forEach { option -> FilterChip(selected = selected == option, onClick = { onSelect(option) }, label = { Text(option) }) } }
     }
 }
